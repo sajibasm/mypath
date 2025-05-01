@@ -2,6 +2,20 @@ import 'package:flutter/material.dart';
 import 'colors.dart';
 
 class AppTextStyles {
+
+  static const double pageHorizontalPadding = 24.0;
+  static const double pageVerticalPadding = 24.0;
+  static const double buttonHorizontalPadding = 24.0;
+  static const double buttonVerticalPadding = 12.0;
+
+
+  static const double inputFieldSpacing = 20.0;
+  static const double buttonSpacing = 12.0;
+  static const double buttonPaddingVertical = 16.0;
+  static const double pagePadding = 24.0; // general padding
+
+
+
   /// 🟦 Big screen headers like "Welcome", "Reset Password"
   static const TextStyle header = TextStyle(
     fontSize: 32,
@@ -58,4 +72,7 @@ static const TextStyle title = TextStyle(
     fontWeight: FontWeight.bold,
     color: AppColors.primary,
   );
+
+
+
 }

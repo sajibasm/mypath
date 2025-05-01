@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 import '../constants/styles.dart';
+import '../constants/constants.dart';
 import '../services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -9,12 +10,11 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _opacityAnimation;
-  late Animation<Offset> _slideAnimation;
+  late final AnimationController _controller;
+  late final Animation<double> _opacityAnimation;
+  late final Animation<Offset> _slideAnimation;
 
   bool _isPasswordVisible = false;
-
 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -25,7 +25,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 800),
+      duration: AppConstants.animationDuration, // Use your constant
     );
 
     _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -33,13 +33,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     );
 
     _slideAnimation = Tween<Offset>(
-      begin: Offset(0, 1), // start off-screen bottom
+      begin: const Offset(0, 1),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
 
-    _controller.forward(); // Start the animation
+    _controller.forward();
   }
 
   @override
@@ -60,12 +60,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           Expanded(
             flex: 2,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: AppConstants.mapPadding),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Welcome',
-                  style: AppTextStyles.header
+                  style: AppTextStyles.header,
                 ),
               ),
             ),
@@ -87,115 +87,92 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               },
               child: Container(
                 width: double.infinity,
-                padding: EdgeInsets.all(24),
-                decoration: BoxDecoration(
+                padding: const EdgeInsets.all(AppConstants.mapPadding),
+                decoration: const BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.vertical(
                     top: Radius.circular(30),
                   ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextField(
-                      controller: emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        labelText: 'Email address',
-                        labelStyle: AppTextStyles.label,
-                        prefixIcon: Icon(Icons.person_outline),
+                child: SingleChildScrollView( // Make sure it scrolls if the keyboard comes up
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          labelText: 'Email address',
+                          labelStyle: AppTextStyles.label,
+                          prefixIcon: const Icon(Icons.person_outline),
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 20),
-                    TextField(
-                      controller: passwordController,
-                      obscureText: !_isPasswordVisible, // reverse the bool
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        labelStyle: AppTextStyles.label,
-                        prefixIcon: Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: passwordController,
+                        obscureText: !_isPasswordVisible,
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          labelStyle: AppTextStyles.label,
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _isPasswordVisible = !_isPasswordVisible;
+                              });
+                            },
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _isPasswordVisible = !_isPasswordVisible;
-                            });
-                          },
                         ),
                       ),
-                    ),
-                    SizedBox(height: 30),
-                    ElevatedButton(
-                      onPressed: () async {
-                          final email = emailController.text.trim();
-                          final password = passwordController.text.trim();
-
-                          if (email.isEmpty || password.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Please enter email and password')),
-                            );
-                            return;
-                          }
-
-                          try {
-                            final result = await ApiService.login(email, password);
-                            // Optional: Store tokens securely (e.g., with flutter_secure_storage)
-                            // await storage.write(key: 'accessToken', value: result['access']);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(result['msg'] ?? 'Login Successful')),
-                            );
-
-                            Navigator.pushReplacementNamed(context, '/home');
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Login failed: $e')),
-                            );
-                          }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      const SizedBox(height: 30),
+                      ElevatedButton(
+                        onPressed: _handleLogin,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Login',
+                          style: AppTextStyles.primaryButton,
                         ),
                       ),
-                      child: Text(
-                        'Login',
-                         style: AppTextStyles.primaryButton,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    OutlinedButton(
-                      onPressed: () {
-                        // TODO: Handle sign up
-                      },
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: AppColors.primary, width: 2),
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Sign Up',
-                        style: AppTextStyles.outlinedButton,
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    Center(
-                      child: TextButton(
+                      const SizedBox(height: 12),
+                      OutlinedButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, '/reset-password');
+                          Navigator.pushNamed(context, '/signup'); // Assuming you handle sign up here
                         },
-                        child: Text(
-                          'Reset Password',
-                           style: AppTextStyles.link,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.primary, width: 2),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Sign Up',
+                          style: AppTextStyles.outlinedButton,
                         ),
                       ),
-                    )
-                  ],
+                      const SizedBox(height: 20),
+                      Center(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pushNamed(context, '/reset-password');
+                          },
+                          child: const Text(
+                            'Reset Password',
+                            style: AppTextStyles.link,
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -203,5 +180,31 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         ],
       ),
     );
+  }
+
+  Future<void> _handleLogin() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter email and password')),
+      );
+      return;
+    }
+
+    try {
+      final result = await ApiService.login(email, password);
+
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text(result['msg'] ?? 'Login Successful')),
+      // );
+
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login failed: $e')),
+      );
+    }
   }
 }

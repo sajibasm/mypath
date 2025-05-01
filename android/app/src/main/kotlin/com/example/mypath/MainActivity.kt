@@ -1,4 +1,4 @@
-package com.example.mypath
+package com.routemypath.MyPathApp
 
 import io.flutter.embedding.android.FlutterActivity
 

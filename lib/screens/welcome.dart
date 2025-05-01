@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 import '../constants/styles.dart';
-
+import '../constants/constants.dart'; // Added because you use animationDuration and padding constants.
 
 class WelcomeScreen extends StatefulWidget {
   @override
@@ -10,9 +10,9 @@ class WelcomeScreen extends StatefulWidget {
 
 class _WelcomeScreenState extends State<WelcomeScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _opacityAnimation;
-  late Animation<Offset> _slideAnimation;
+  late final AnimationController _controller;
+  late final Animation<double> _opacityAnimation;
+  late final Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
@@ -20,7 +20,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 800),
+      duration: AppConstants.animationDuration, // ⬅️ Use constant
     );
 
     _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -28,7 +28,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     );
 
     _slideAnimation = Tween<Offset>(
-      begin: Offset(0, 1),
+      begin: const Offset(0, 1),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
@@ -77,8 +77,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               },
               child: Container(
                 width: double.infinity,
-                padding: EdgeInsets.all(24),
-                decoration: BoxDecoration(
+                padding: const EdgeInsets.all(AppConstants.mapPadding), // ⬅️ Use constant
+                decoration: const BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.vertical(
                     top: Radius.circular(30),
@@ -92,12 +92,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       'MyPath',
                       style: AppTextStyles.title,
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       'We Generate Accessible Routes Together',
-                      style: AppTextStyles.label,
+                      style: AppTextStyles.subtitle, // ⬅️ Use subtitle instead of label (it's a headline)
                     ),
-                    SizedBox(height: 32),
+                    const SizedBox(height: 32),
                     Align(
                       alignment: Alignment.centerRight,
                       child: ElevatedButton(
@@ -106,18 +106,20 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
                         ),
-                        child: Text(
+                        child: const Text(
                           'Get Started',
                           style: AppTextStyles.primaryButton,
                         ),
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),

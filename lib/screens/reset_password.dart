@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 import '../constants/styles.dart';
+import '../constants/constants.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   @override
@@ -9,9 +10,9 @@ class ResetPasswordScreen extends StatefulWidget {
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _opacityAnimation;
-  late Animation<Offset> _slideAnimation;
+  late final AnimationController _controller;
+  late final Animation<double> _opacityAnimation;
+  late final Animation<Offset> _slideAnimation;
 
   final TextEditingController emailController = TextEditingController();
 
@@ -21,7 +22,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
 
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 800),
+      duration: AppConstants.animationDuration, // Use your constant
     );
 
     _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -29,7 +30,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     );
 
     _slideAnimation = Tween<Offset>(
-      begin: Offset(0, 1),
+      begin: const Offset(0, 1),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
@@ -55,12 +56,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
           Expanded(
             flex: 2,
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: AppConstants.mapPadding),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'Reset Password',
-                   style: AppTextStyles.header
+                  style: AppTextStyles.header,
                 ),
               ),
             ),
@@ -82,54 +83,51 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
               },
               child: Container(
                 width: double.infinity,
-                padding: EdgeInsets.all(24),
-                decoration: BoxDecoration(
+                padding: const EdgeInsets.all(AppConstants.mapPadding),
+                decoration: const BoxDecoration(
                   color: AppColors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(30),
                   ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Enter Your Email Address*',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.black,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Enter Your Email Address*',
+                        style: AppTextStyles.label, // Use your label style
                       ),
-                    ),
-                    SizedBox(height: 10),
-                    TextField(
-                      controller: emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        hintText: 'example@email.com',
-                        prefixIcon: Icon(Icons.email_outlined),
-                        border: UnderlineInputBorder(),
-                      ),
-                    ),
-                    SizedBox(height: 40),
-                    ElevatedButton(
-                      onPressed: () {
-                        // TODO: Implement reset link logic
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        minimumSize: Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                          hintText: 'example@email.com',
+                          prefixIcon: Icon(Icons.email_outlined),
+                          border: UnderlineInputBorder(),
                         ),
                       ),
-                      child: Text(
-                        'Send Password Reset Link',
-                        style: AppTextStyles.primaryButton
-                      ),
-                    )
-                  ],
+                      const SizedBox(height: 40),
+                      ElevatedButton(
+                        onPressed: () {
+                          // TODO: Implement reset link logic
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(vertical: AppConstants.buttonVerticalPadding),
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Send Password Reset Link',
+                          style: AppTextStyles.primaryButton,
+                        ),
+                      )
+                    ],
+                  ),
                 ),
               ),
             ),
