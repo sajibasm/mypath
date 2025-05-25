@@ -1,19 +1,21 @@
+import 'package:MyPath/screens/ChangePasswordScreen.dart';
+import 'package:MyPath/screens/ProfileScreen.dart';
+import 'package:MyPath/screens/SettingsScreen.dart';
+import 'package:MyPath/screens/WheelChairScreen.dart';
 import 'package:flutter/material.dart';
-import 'services/api_service.dart';
-import 'services/auth_service.dart'; // <-- import
-import 'screens/welcome.dart';
-import 'screens/login.dart';
-import 'screens/reset_password.dart';
-import 'screens/home.dart';
+import 'services/ApiService.dart';
+import 'services/AuthService.dart'; // <-- import
+import 'screens/WelcomeScreen.dart';
+import 'screens/LoginScreen.dart';
+import 'screens/SignupScreen.dart';
+import 'screens/ResetPasswordScreen.dart';
+import 'screens/HomeScreen.dart';
 import 'constants/colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await ApiService.loadToken();
-  final isValid = await AuthService.isAccessTokenValid(); // <-- use new service
-
-  runApp(MyPathApp(initialRoute: isValid ? '/welcome' : '/'));
+  runApp(const MyPathApp(initialRoute: '/',));
 }
 
 class MyPathApp extends StatelessWidget {
@@ -28,7 +30,29 @@ class MyPathApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primaryColor: AppColors.primary,
-        scaffoldBackgroundColor: AppColors.white,
+
+        // 👇 Set global text field cursor color
+        textSelectionTheme: const TextSelectionThemeData(
+          cursorColor: Colors.black, // blinking caret color
+        ),
+
+        // 👇 Customize InputDecoration globally
+        inputDecorationTheme: const InputDecorationTheme(
+          focusedBorder: UnderlineInputBorder(
+            borderSide: BorderSide(color: Colors.black),
+          ),
+          enabledBorder: UnderlineInputBorder(
+            borderSide: BorderSide(color: Colors.grey),
+          ),
+          labelStyle: TextStyle(
+            color: Colors.black, // Label when inactive
+          ),
+          floatingLabelStyle: TextStyle(
+            color: Colors.black, // Label when field is focused
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.blue,
           centerTitle: false,
@@ -41,13 +65,21 @@ class MyPathApp extends StatelessWidget {
             color: AppColors.white,
           ),
         ),
+
       ),
       initialRoute: initialRoute,
       routes: {
         '/': (context) => WelcomeScreen(),
+        '/welcome': (context) => WelcomeScreen(),
         '/home': (context) => HomeScreen(),
         '/login': (context) => LoginScreen(),
+        '/signup': (context) => SignupScreen(),
         '/reset-password': (context) => ResetPasswordScreen(),
+        '/profile': (context) =>  ProfileScreen(),
+        '/wheelchair': (context) => WheelChairScreen(),
+        '/change-password': (_) =>  ChangePasswordScreen(),
+        '/settings': (context) =>  SettingsScreen(),
+
       },
     );
   }

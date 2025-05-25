@@ -3,12 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
-import '../widgets/turn_by_turn_map.dart';
-import '../widgets/data-summary.dart';
+import '../services/TokenStorageService.dart';
+import '../widgets/NavigationWidgets.dart';
+import '../widgets/DataSummary.dart';
 import '../constants/colors.dart';
 import '../constants/styles.dart';
 import '../constants/constants.dart';
-import '../services/api_service.dart';
+import '../services/ApiService.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -35,6 +36,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   StreamSubscription<LocationData>? _locationSub;
 
+  String? userName;
+  String? userEmail;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
+
   @override
   void dispose() {
     _locationSub?.cancel();
@@ -47,6 +58,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     setState(() {
       _selectedIndex = index;
+    });
+  }
+
+  Future<void> _loadUserInfo() async {
+    final user = await TokenStorageService.loadUserInfo();
+    setState(() {
+      userName = user['name'] ?? 'Guest';
+      userEmail = user['email'] ?? '';
     });
   }
 
@@ -118,6 +137,13 @@ class _HomeScreenState extends State<HomeScreen> {
         _startDataCollection(isRetry: true);
       });
     }
+  }
+
+  String _getInitials(String? name) {
+    if (name == null || name.trim().isEmpty) return 'U';
+    final parts = name.trim().split(' ');
+    if (parts.length == 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
   }
 
   void _stopDataCollection() {
@@ -238,14 +264,17 @@ class _HomeScreenState extends State<HomeScreen> {
       drawer: Drawer(
         child: Column(
           children: [
-            const UserAccountsDrawerHeader(
-              accountName: Text("asmsajib"),
-              accountEmail: Text(""),
+            UserAccountsDrawerHeader(
+              accountName: Text(userName ?? ''),
+              accountEmail: null,
               currentAccountPicture: CircleAvatar(
                 backgroundColor: Colors.white,
-                child: Text("A", style: TextStyle(fontSize: 24.0, color: Colors.green)),
+                child: Text(
+                  _getInitials(userName),
+                  style: const TextStyle(fontSize: 24.0, color: Colors.green),
+                ),
               ),
-              decoration: BoxDecoration(color: AppColors.primary),
+              decoration: const BoxDecoration(color: AppColors.primary),
             ),
             ListTile(
               leading: const Icon(Icons.person),
@@ -253,6 +282,22 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, '/profile');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.accessible_forward), // wheelchair icon
+              title: const Text("WheelChair"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/wheelchair');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text("Settings"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/settings');
               },
             ),
             ListTile(
@@ -264,20 +309,19 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             const Divider(),
-            const Spacer(),
-            const Divider(),
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text("Sign Out"),
               onTap: () async {
                 Navigator.pop(context);
-                await ApiService.clearToken();
+                await TokenStorageService.clearAll();
                 Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
               },
             ),
           ],
         ),
       ),
+
       body: _buildBody(),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
@@ -286,7 +330,7 @@ class _HomeScreenState extends State<HomeScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Data Summary'),
-          BottomNavigationBarItem(icon: Icon(Icons.navigation), label: 'TurnByTurn'),
+          BottomNavigationBarItem(icon: Icon(Icons.navigation), label: 'Navigation'),
         ],
       ),
     );

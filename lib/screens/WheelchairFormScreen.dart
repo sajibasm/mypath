@@ -1,0 +1,225 @@
+import 'package:flutter/material.dart';
+import '../services/ApiService.dart';
+import '../constants/colors.dart';
+import '../utils/CustomLoader.dart';
+
+class WheelchairFormScreen extends StatefulWidget {
+  final Map<String, dynamic>? wheelchair;
+
+  const WheelchairFormScreen({super.key, this.wheelchair});
+
+  @override
+  State<WheelchairFormScreen> createState() => _WheelchairFormScreenState();
+}
+
+class _WheelchairFormScreenState extends State<WheelchairFormScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  late TextEditingController identifierController;
+  late TextEditingController heightController;
+  late TextEditingController widthController;
+  late int wheelNumber;
+  late bool isDefault;
+
+  int? selectedTypeId;
+  int? selectedDriveTypeId;
+  int? selectedTireMaterialId;
+
+  List<Map<String, dynamic>> typeOptions = [];
+  List<Map<String, dynamic>> driveOptions = [];
+  List<Map<String, dynamic>> tireOptions = [];
+
+  bool isLoading = false;
+  bool isDropdownLoading = true;
+
+
+  @override
+  void initState() {
+    super.initState();
+    identifierController = TextEditingController(text: widget.wheelchair?['identifier'] ?? '');
+    heightController = TextEditingController(text: widget.wheelchair?['height'] ?? '');
+    widthController = TextEditingController(text: widget.wheelchair?['width'] ?? '');
+    wheelNumber = widget.wheelchair?['wheel_number'] ?? 2;
+    isDefault = widget.wheelchair?['is_default'] ?? false;
+
+    // Extract nested IDs correctly
+    selectedTypeId = widget.wheelchair?['wheelchair_type']?['id'];
+    selectedDriveTypeId = widget.wheelchair?['wheelchair_drive_type']?['id'];
+    selectedTireMaterialId = widget.wheelchair?['wheelchair_tire_material']?['id'];
+
+    _loadDropdowns();
+  }
+
+  Future<void> _loadDropdowns() async {
+    try {
+      final types = await ApiService.getWheelchairTypes();
+      final drives = await ApiService.getDriveTypes();
+      final tires = await ApiService.getTireMaterials();
+
+      setState(() {
+        typeOptions = List<Map<String, dynamic>>.from(types);
+        driveOptions = List<Map<String, dynamic>>.from(drives);
+        tireOptions = List<Map<String, dynamic>>.from(tires);
+        isDropdownLoading = false;
+      });
+    } catch (e) {
+      setState(() => isDropdownLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to load dropdown data: $e")));
+    }
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final data = {
+      'identifier': identifierController.text,
+      'wheel_number': wheelNumber,
+      'wheelchair_type_id': selectedTypeId,
+      'wheelchair_drive_type_id': selectedDriveTypeId,
+      'wheelchair_tire_material_id': selectedTireMaterialId,
+      'height': heightController.text,
+      'width': widthController.text,
+      'status': 'active',
+      'is_default': isDefault,
+    };
+
+    // Only include non-null dropdowns
+    if (selectedTypeId != null) {
+      data['wheelchair_type_id'] = selectedTypeId;
+    }
+    if (selectedDriveTypeId != null) {
+      data['wheelchair_drive_type_id'] = selectedDriveTypeId;
+    }
+    if (selectedTireMaterialId != null) {
+      data['wheelchair_tire_material_id'] = selectedTireMaterialId;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      if (widget.wheelchair == null) {
+        await ApiService.createWheelchair(data);
+      } else {
+        await ApiService.updateWheelchair(widget.wheelchair!['id'], data);
+      }
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  @override
+
+  Widget build(BuildContext context) {
+    final isEdit = widget.wheelchair != null;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(isEdit ? 'Edit Wheelchair' : 'Add Wheelchair'),
+        backgroundColor: AppColors.primary,
+      ),
+      body: isDropdownLoading
+          ? const Center(child: CustomLoader())
+          : Padding(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              TextFormField(
+                controller: identifierController,
+                decoration: const InputDecoration(labelText: 'Identifier'),
+                validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int>(
+                value: wheelNumber,
+                decoration: const InputDecoration(labelText: 'Number of Wheels'),
+                items: [2, 3, 4]
+                    .map((val) => DropdownMenuItem(value: val, child: Text('$val Wheels')))
+                    .toList(),
+                onChanged: (val) => setState(() => wheelNumber = val ?? 2),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int>(
+                value: selectedTypeId,
+                decoration: const InputDecoration(labelText: 'Wheelchair Type'),
+                onChanged: (val) => setState(() => selectedTypeId = val),
+                items: typeOptions.map((type) {
+                  return DropdownMenuItem<int>(
+                    value: type['id'],
+                    child: Text(type['name']),
+                  );
+                }).toList(),
+                validator: (val) => val == null ? 'Please select a type' : null,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int>(
+                value: selectedDriveTypeId,
+                decoration: const InputDecoration(labelText: 'Drive Type'),
+                onChanged: (val) => setState(() => selectedDriveTypeId = val),
+                items: driveOptions.map((item) {
+                  return DropdownMenuItem<int>(
+                    value: item['id'],
+                    child: Text(item['name']),
+                  );
+                }).toList(),
+                validator: (val) => val == null ? 'Please Drive Type' : null,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int>(
+                value: selectedTireMaterialId,
+                decoration: const InputDecoration(labelText: 'Tire Material'),
+                onChanged: (val) => setState(() => selectedTireMaterialId = val),
+                items: tireOptions.map((item) {
+                  return DropdownMenuItem<int>(
+                    value: item['id'],
+                    child: Text(item['name']),
+                  );
+                }).toList(),
+                validator: (val) => val == null ? 'Please Tire Material' : null,
+
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: heightController,
+                decoration: const InputDecoration(labelText: 'Height (inches)'),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: widthController,
+                decoration: const InputDecoration(labelText: 'Width (inches)'),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text('Is Default'),
+                activeColor: Colors.green, // ✅ sets thumb (switch) color
+                value: isDefault,
+                onChanged: (val) => setState(() => isDefault = val),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: isLoading ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: isLoading
+                    ? const CustomLoader()
+                    : Text(
+                  isEdit ? 'Update Wheelchair' : 'Create Wheelchair',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
