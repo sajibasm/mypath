@@ -188,6 +188,23 @@ class _WheelChairScreenState extends State<WheelChairScreen> {
           ? const Center(child: CustomLoader())
           : error != null
           ? Center(child: Text(error!, style: const TextStyle(color: Colors.red)))
+          : wheelchairs.isEmpty
+          ? RefreshIndicator(
+        onRefresh: _loadWheelchairs,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(height: 100),
+            Center(
+              child: Text(
+                "No wheelchairs found.\nTap + to add your first wheelchair.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            ),
+          ],
+        ),
+      )
           : RefreshIndicator(
         onRefresh: _loadWheelchairs,
         child: ListView.builder(
@@ -208,6 +225,8 @@ class _WheelChairScreenState extends State<WheelChairScreen> {
           },
         ),
       ),
+
+
 
       // 🔧 FAB goes here inside Scaffold
       floatingActionButton: FloatingActionButton(
