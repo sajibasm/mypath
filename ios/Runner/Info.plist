@@ -46,13 +46,18 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 
+	<!-- ✅ Location Permissions -->
 	<key>NSLocationWhenInUseUsageDescription</key>
-    <string>This app uses your location for maps.</string>
-    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>This app uses your location even in the background.</string>
+	<string>This app uses your location for maps.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app uses your location even in the background for real-time wheelchair tracking.</string>
 
-    <key>NSFaceIDUsageDescription</key>
-    <string>This app uses Face ID to authenticate the user.</string>
+	<!-- ✅ Motion Sensor Permission -->
+	<key>NSMotionUsageDescription</key>
+	<string>This app uses motion sensors (accelerometer, gyroscope, magnetometer) to analyze wheelchair movement and surfaces.</string>
 
+	<!-- ✅ Biometric Permission -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>This app uses Face ID or Touch ID for secure login and user authentication.</string>
 </dict>
 </plist>

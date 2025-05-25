@@ -1,6 +1,26 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
-class TokenStorageService {
+class StorageService {
+
+
+  // ✅ Save selected wheelchair as JSON
+  static Future<void> saveSelectedWheelchair(Map<String, dynamic> wheelchair) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selected_wheelchair', jsonEncode(wheelchair));
+  }
+
+// ✅ Load selected wheelchair
+  static Future<Map<String, dynamic>?> loadSelectedWheelchair() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString('selected_wheelchair');
+    if (jsonString == null) return null;
+    return jsonDecode(jsonString);
+  }
+
+
+
   // ✅ Save tokens and expiration
   static Future<void> saveTokens({
     required String accessToken,

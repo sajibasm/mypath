@@ -5,7 +5,7 @@ import '../constants/colors.dart';
 import '../constants/constants.dart';
 import '../constants/styles.dart';
 import '../services/ApiService.dart';
-import '../services/TokenStorageService.dart';
+import '../services/StorageService.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -15,6 +15,8 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  final _formKey = GlobalKey<FormState>();
+
   final emailController = TextEditingController();
   final nameController = TextEditingController();
   final passwordController = TextEditingController();
@@ -52,14 +54,10 @@ class _SignupScreenState extends State<SignupScreen> {
   ];
 
   Future<void> handleSignup() async {
-    final email = emailController.text.trim();
-    final name = nameController.text.trim();
-    final password = passwordController.text.trim();
-
-    if (email.isEmpty || name.isEmpty || password.isEmpty || !termsAccepted) {
+    if (!_formKey.currentState!.validate() || !termsAccepted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please fill in all required fields and accept the terms.'),
+          content: Text('Please complete all fields and accept the terms.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -69,9 +67,9 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => isLoading = true);
 
     final result = await ApiService.signup(
-      email: email,
-      name: name,
-      password: password,
+      email: emailController.text.trim(),
+      name: nameController.text.trim(),
+      password: passwordController.text.trim(),
       height: selectedHeight,
       weight: selectedWeight,
       gender: gender,
@@ -91,12 +89,8 @@ class _SignupScreenState extends State<SignupScreen> {
     );
 
     if (success) {
-      // Optionally navigate to dashboard or login
-      print('Access Token: ${result['access_token']}');
-      print('Refresh Token: ${result['refresh_token']}');
-
-      await TokenStorageService.saveUserInfo(result['user']);
-      await TokenStorageService.saveTokens(
+      await StorageService.saveUserInfo(result['user']);
+      await StorageService.saveTokens(
         accessToken: result['access_token'],
         refreshToken: result['refresh_token'],
         accessExpires: result['access_token_expires_at'],
@@ -105,15 +99,14 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false, // 👈 Prevents keyboard push-up
+      resizeToAvoidBottomInset: false,
       backgroundColor: AppColors.primary,
       body: SafeArea(
-        top: true, // only apply SafeArea for top
-        bottom: false, // let it extend to bottom
+        top: true,
+        bottom: false,
         child: Column(
           children: [
             Expanded(
@@ -135,129 +128,196 @@ class _SignupScreenState extends State<SignupScreen> {
                   borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
                 ),
                 child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon: Icon(Icons.email),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            labelText: 'Email',
+                            prefixIcon: Icon(Icons.email),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) return 'Email is required';
+                            final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,63}$');
+                            if (!emailRegex.hasMatch(value.trim())) return 'Enter a valid email';
+                            return null;
+                          },
+                          onChanged: (_) {
+                            if (_formKey.currentState != null) _formKey.currentState!.validate();
+                          },
                         ),
-                      ),
-                      const SizedBox(height: 15),
-                      TextField(
-                        controller: nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Full Name',
-                          prefixIcon: Icon(Icons.person),
+                        const SizedBox(height: 15),
+                        TextFormField(
+                          controller: nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Full Name',
+                            prefixIcon: Icon(Icons.person),
+                          ),
+                          validator: (value) => value == null || value.trim().isEmpty ? 'Full name is required' : null,
+                          onChanged: (_) {
+                            if (_formKey.currentState != null) _formKey.currentState!.validate();
+                          },
                         ),
-                      ),
-                      const SizedBox(height: 15),
-                      TextField(
-                        controller: passwordController,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Password',
-                          prefixIcon: Icon(Icons.lock),
-                        ),
-                      ),
-                      const SizedBox(height: 15),
 
-                      DropdownButtonFormField<String>(
-                        value: selectedHeight,
-                        decoration: const InputDecoration(
-                          labelText: 'Height',
-                          prefixIcon: Icon(Icons.height), // 👈 Height icon
+                        const SizedBox(height: 15),
+                        TextFormField(
+                          controller: passwordController,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: Icon(Icons.lock),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) return 'Password is required';
+                            if (value.length < 6) return 'Password must be at least 6 characters';
+                            return null;
+                          },
+                          onChanged: (_) {
+                            if (_formKey.currentState != null) _formKey.currentState!.validate();
+                          },
                         ),
-                        onChanged: (val) => setState(() => selectedHeight = val ?? '0_40'),
-                        items: heightOptions.map((item) {
-                          return DropdownMenuItem(value: item['value'], child: Text(item['label']!));
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 15),
+                        const SizedBox(height: 15),
 
-                      DropdownButtonFormField<String>(
-                        value: selectedWeight,
-                        decoration: const InputDecoration(
+                        DropdownButtonFormField<String>(
+                          value: selectedHeight,
+                          decoration: const InputDecoration(
+                            labelText: 'Height',
+                            prefixIcon: Icon(Icons.height),
+                          ),
+                          onChanged: (val) {
+                            setState(() => selectedHeight = val ?? '0_40');
+                            if (_formKey.currentState != null) _formKey.currentState!.validate();
+                          },
+                          items: heightOptions.map((item) {
+                            return DropdownMenuItem(value: item['value'], child: Text(item['label']!));
+                          }).toList(),
+                          validator: (value) => value == null ? 'Select height' : null,
+                        ),
+                        const SizedBox(height: 15),
+
+                        DropdownButtonFormField<String>(
+                          value: selectedWeight,
+                          decoration: const InputDecoration(
                             labelText: 'Weight',
-                            prefixIcon: Icon(Icons.fitness_center), // 👈 Weight icon
+                            prefixIcon: Icon(Icons.fitness_center),
+                          ),
+                          onChanged: (val) {
+                            setState(() => selectedWeight = val ?? '0_100');
+                            if (_formKey.currentState != null) _formKey.currentState!.validate();
+                          },
+                          items: weightOptions.map((item) {
+                            return DropdownMenuItem(value: item['value'], child: Text(item['label']!));
+                          }).toList(),
+                          validator: (value) => value == null ? 'Select weight' : null,
                         ),
-                        onChanged: (val) => setState(() => selectedWeight = val ?? '0_100'),
-                        items: weightOptions.map((item) {
-                          return DropdownMenuItem(value: item['value'], child: Text(item['label']!));
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 15),
+                        const SizedBox(height: 15),
 
-                      DropdownButtonFormField<String>(
-                        value: selectedAge,
-                        decoration: const InputDecoration(
+                        DropdownButtonFormField<String>(
+                          value: selectedAge,
+                          decoration: const InputDecoration(
                             labelText: 'Age',
-                            prefixIcon: Icon(Icons.calendar_today), // 👈 Age icon
+                            prefixIcon: Icon(Icons.calendar_today),
+                          ),
+                          onChanged: (val) {
+                            setState(() => selectedAge = val ?? '0_20');
+                            if (_formKey.currentState != null) _formKey.currentState!.validate();
+                          },
+                          items: ageOptions.map((item) {
+                            return DropdownMenuItem(value: item['value'], child: Text(item['label']!));
+                          }).toList(),
+                          validator: (value) => value == null ? 'Select age' : null,
                         ),
-                        onChanged: (val) => setState(() => selectedAge = val ?? '0_20'),
-                        items: ageOptions.map((item) {
-                          return DropdownMenuItem(value: item['value'], child: Text(item['label']!));
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 15),
+                        const SizedBox(height: 15),
 
-                      DropdownButtonFormField<String>(
-                        value: gender,
-                        onChanged: (val) => setState(() => gender = val ?? '-'),
-                        items: ['-', 'Male', 'Female', 'Other']
-                            .map((g) => DropdownMenuItem(value: g, child: Text(g)))
-                            .toList(),
-                        decoration: const InputDecoration(
+                        DropdownButtonFormField<String>(
+                          value: gender,
+                          onChanged: (val) {
+                            setState(() => gender = val ?? '-');
+                            if (_formKey.currentState != null) _formKey.currentState!.validate();
+                          },
+                          items: ['-', 'Male', 'Female', 'Other']
+                              .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                              .toList(),
+                          decoration: const InputDecoration(
                             labelText: 'Gender',
-                            prefixIcon: Icon(Icons.wc), // 👈 Gender icon
+                            prefixIcon: Icon(Icons.wc),
+                          ),
+                          validator: (value) => value == null || value == '-' ? 'Select gender' : null,
                         ),
-                      ),
-                      const SizedBox(height: 15),
+                        const SizedBox(height: 15),
 
-                      Row(
-                        children: [
-                          Theme(
-                            data: Theme.of(context).copyWith(
-                              checkboxTheme: CheckboxThemeData(
-                                fillColor: MaterialStateProperty.resolveWith<Color>((states) {
-                                  if (states.contains(MaterialState.selected)) {
-                                    return AppColors.primary; // ✅ Blue when checked
-                                  }
-                                  return Colors.white; // ⬜️ White when unchecked
-                                }),
-                                checkColor: MaterialStateProperty.all(Colors.white), // Checkmark color
-                              ),
-                            ),
-                            child: Checkbox(
-                              value: termsAccepted,
-                              onChanged: (value) => setState(() => termsAccepted = value ?? false),
+                        FormField<bool>(
+                          initialValue: termsAccepted,
+                          validator: (value) {
+                            if (!termsAccepted) return 'You must accept the terms';
+                            return null;
+                          },
+                          builder: (formState) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Theme(
+                                      data: Theme.of(context).copyWith(
+                                        checkboxTheme: CheckboxThemeData(
+                                          fillColor: MaterialStateProperty.resolveWith<Color>((states) {
+                                            if (states.contains(MaterialState.selected)) {
+                                              return AppColors.primary;
+                                            }
+                                            return Colors.white;
+                                          }),
+                                          checkColor: MaterialStateProperty.all(Colors.white),
+                                        ),
+                                      ),
+                                      child: Checkbox(
+                                        value: termsAccepted,
+                                        onChanged: (value) {
+                                          setState(() => termsAccepted = value ?? false);
+                                          formState.didChange(value);
+                                          _formKey.currentState?.validate(); // trigger revalidation
+                                        },
+                                      ),
+                                    ),
+                                    const Expanded(child: Text('I accept the terms and conditions')),
+                                  ],
+                                ),
+                                if (formState.hasError)
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 12.0, top: 4),
+                                    child: Text(
+                                      formState.errorText ?? '',
+                                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+
+
+                        const SizedBox(height: 30),
+
+                        ElevatedButton(
+                          onPressed: isLoading ? null : handleSignup,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(
+                                vertical: AppConstants.buttonVerticalPadding),
+                            minimumSize: const Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          const Expanded(child: Text('I accept the terms and conditions')),
-                        ],
-                      ),
-
-
-                      const SizedBox(height: 30),
-
-                      ElevatedButton(
-                        onPressed: isLoading ? null : handleSignup,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(
-                              vertical: AppConstants.buttonVerticalPadding),
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text('Sign Up', style: AppTextStyles.primaryButton),
-                      )
-                    ],
+                          child: isLoading
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : const Text('Sign Up', style: AppTextStyles.primaryButton),
+                        )
+                      ],
+                    ),
                   ),
                 ),
               ),

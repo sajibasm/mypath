@@ -14,7 +14,9 @@ class ResetPasswordScreen extends StatefulWidget {
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     with SingleTickerProviderStateMixin {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController emailController = TextEditingController();
+
   late final AnimationController _controller;
   late final Animation<double> _opacityAnimation;
   late final Animation<Offset> _slideAnimation;
@@ -46,14 +48,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
   }
 
   Future<void> handleSendPasswordResetCode() async {
-    final email = emailController.text.trim();
+    if (!_formKey.currentState!.validate()) return;
 
-    if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your email address.')),
-      );
-      return;
-    }
+    final email = emailController.text.trim();
 
     final result = await ApiService.sendPasswordResetCode(email);
     final bool success = result['status'] == true;
@@ -118,38 +115,57 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                   color: AppColors.white,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Enter Your Email Address*', style: AppTextStyles.label),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        hintText: 'example@email.com',
-                        prefixIcon: Icon(Icons.email_outlined),
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    ElevatedButton(
-                      onPressed: handleSendPasswordResetCode,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppConstants.buttonVerticalPadding,
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Enter Your Email Address*', style: AppTextStyles.label),
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                          hintText: 'example@email.com',
+                          prefixIcon: Icon(Icons.email_outlined),
                         ),
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your email address';
+                          }
+                          final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,63}$');
+                          if (!emailRegex.hasMatch(value)) {
+                            return 'Enter a valid email address';
+                          }
+                          return null;
+                        },
+                        onChanged: (value) {
+                          if (_formKey.currentState != null) {
+                            _formKey.currentState!.validate();
+                          }
+                        },
+                      ),
+
+                      const SizedBox(height: 40),
+                      ElevatedButton(
+                        onPressed: handleSendPasswordResetCode,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppConstants.buttonVerticalPadding,
+                          ),
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Send Code',
+                          style: AppTextStyles.primaryButton,
                         ),
                       ),
-                      child: const Text(
-                        'Send Code',
-                        style: AppTextStyles.primaryButton,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

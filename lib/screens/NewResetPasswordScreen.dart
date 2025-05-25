@@ -15,8 +15,10 @@ class NewPasswordScreen extends StatefulWidget {
 }
 
 class _NewPasswordScreenState extends State<NewPasswordScreen> with SingleTickerProviderStateMixin {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmController = TextEditingController();
+
   late final AnimationController _controller;
   late final Animation<double> _opacityAnimation;
   late final Animation<Offset> _slideAnimation;
@@ -49,23 +51,9 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> with SingleTicker
   }
 
   Future<void> handleResetPassword() async {
+    if (!_formKey.currentState!.validate()) return;
+
     final password = passwordController.text.trim();
-    final confirm = confirmController.text.trim();
-
-    if (password.isEmpty || confirm.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in both fields.')),
-      );
-      return;
-    }
-
-    if (password != confirm) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match.')),
-      );
-      return;
-    }
-
     final result = await ApiService.resetPassword(widget.email, widget.code, password);
     final success = result['status'] == true;
 
@@ -117,46 +105,77 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> with SingleTicker
                   color: AppColors.white,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Enter your new password', style: AppTextStyles.label),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: passwordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        hintText: 'New Password',
-                        prefixIcon: Icon(Icons.lock),
-                        border: UnderlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    TextField(
-                      controller: confirmController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        hintText: 'Confirm Password',
-                        prefixIcon: Icon(Icons.lock_outline),
-                        border: UnderlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    ElevatedButton(
-                      onPressed: handleResetPassword,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppConstants.buttonVerticalPadding,
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Enter your new password', style: AppTextStyles.label),
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: passwordController,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          hintText: 'New Password',
+                          prefixIcon: Icon(Icons.lock),
+                          border: UnderlineInputBorder(),
                         ),
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter a new password';
+                          }
+                          if (value.length < 6) {
+                            return 'Password must be at least 6 characters';
+                          }
+                          return null;
+                        },
+                        onChanged: (value) {
+                          if (_formKey.currentState != null) {
+                            _formKey.currentState!.validate();
+                          }
+                        },
                       ),
-                      child: const Text('Reset Password', style: AppTextStyles.primaryButton),
-                    ),
-                  ],
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: confirmController,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          hintText: 'Confirm Password',
+                          prefixIcon: Icon(Icons.lock_outline),
+                          border: UnderlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please confirm your password';
+                          }
+                          if (value != passwordController.text.trim()) {
+                            return 'Passwords do not match';
+                          }
+                          return null;
+                        },
+                        onChanged: (value) {
+                          if (_formKey.currentState != null) {
+                            _formKey.currentState!.validate();
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 40),
+                      ElevatedButton(
+                        onPressed: handleResetPassword,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppConstants.buttonVerticalPadding,
+                          ),
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Reset Password', style: AppTextStyles.primaryButton),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

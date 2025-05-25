@@ -14,24 +14,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final currentController = TextEditingController();
   final newController = TextEditingController();
   final confirmController = TextEditingController();
+
   bool isLoading = false;
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (newController.text != confirmController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("New passwords do not match")),
-      );
-      return;
-    }
-
     setState(() => isLoading = true);
 
     try {
       final response = await ApiService.changePassword(
-        currentPassword: currentController.text,
-        newPassword: newController.text,
+        currentPassword: currentController.text.trim(),
+        newPassword: newController.text.trim(),
       );
 
       if (response['status'] == true) {
@@ -41,7 +35,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         Navigator.pop(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response['detail'] ?? "Change failed")),
+          SnackBar(content: Text(response['detail'] ?? "Password change failed")),
         );
       }
     } catch (e) {
@@ -51,6 +45,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     } finally {
       setState(() => isLoading = false);
     }
+  }
+
+  @override
+  void dispose() {
+    currentController.dispose();
+    newController.dispose();
+    confirmController.dispose();
+    super.dispose();
   }
 
   @override
@@ -72,22 +74,44 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 controller: currentController,
                 obscureText: true,
                 decoration: const InputDecoration(labelText: "Current Password"),
-                validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+                validator: (val) =>
+                val == null || val.trim().isEmpty ? 'Current password is required' : null,
+                onChanged: (_) => _formKey.currentState?.validate(),
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: newController,
                 obscureText: true,
                 decoration: const InputDecoration(labelText: "New Password"),
-                validator: (val) => val != null && val.length < 6 ? 'Min 6 characters' : null,
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) {
+                    return 'New password is required';
+                  }
+                  if (val.length < 6) {
+                    return 'New password must be at least 6 characters';
+                  }
+                  return null;
+                },
+                onChanged: (_) => _formKey.currentState?.validate(),
               ),
+
               const SizedBox(height: 12),
               TextFormField(
                 controller: confirmController,
                 obscureText: true,
                 decoration: const InputDecoration(labelText: "Confirm New Password"),
-                validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) {
+                    return 'Please confirm your new password';
+                  }
+                  if (val != newController.text.trim()) {
+                    return 'Passwords do not match';
+                  }
+                  return null;
+                },
+                onChanged: (_) => _formKey.currentState?.validate(),
               ),
+
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: isLoading ? null : _submit,

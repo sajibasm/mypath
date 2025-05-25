@@ -4,7 +4,7 @@ import '../constants/colors.dart';
 import '../constants/styles.dart';
 import '../constants/constants.dart';
 import '../services/ApiService.dart';
-import '../services/TokenStorageService.dart';
+import '../services/StorageService.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -15,6 +15,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   late final AnimationController _controller;
   late final Animation<double> _opacityAnimation;
   late final Animation<Offset> _slideAnimation;
+
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   bool _isPasswordVisible = false;
 
@@ -74,8 +76,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   Future<void> _handleBiometricLogin() async {
     final success = await _authenticateWithBiometrics();
     if (success) {
-      final tokens = await TokenStorageService.loadTokens();
-      final user = await TokenStorageService.loadUserInfo();
+      final tokens = await StorageService.loadTokens();
+      final user = await StorageService.loadUserInfo();
 
       if (tokens['access_token'] != null && user['name'] != null) {
         Navigator.pushReplacementNamed(context, '/home');
@@ -128,71 +130,102 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
                 ),
                 child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      TextField(
-                        controller: emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        cursorColor: Colors.black, // optional if theme applied
-                        decoration: const InputDecoration(
-                          labelText: 'Email address',
-                          prefixIcon: Icon(Icons.person_outline),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextFormField(
+                          controller: emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          cursorColor: Colors.black,
+                          decoration: const InputDecoration(
+                            labelText: 'Email address',
+                            prefixIcon: Icon(Icons.person_outline),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your email';
+                            }
+                            final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,63}$');
+                            if (!emailRegex.hasMatch(value)) {
+                              return 'Enter a valid email address';
+                            }
+                            return null;
+                          },
+                          onChanged: (value) {
+                            if (_formKey.currentState != null) {
+                              _formKey.currentState!.validate();
+                            }
+                          },
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: passwordController,
-                        obscureText: !_isPasswordVisible,
-                        cursorColor: Colors.black,
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          suffixIcon: IconButton(
-                            icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
-                            onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+
+                        const SizedBox(height: 20),
+                        TextFormField(
+                          controller: passwordController,
+                          obscureText: !_isPasswordVisible,
+                          cursorColor: Colors.black,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                              onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your password';
+                            }
+                            return null;
+                          },
+                          onChanged: (value) {
+                            if (_formKey.currentState != null) {
+                              _formKey.currentState!.validate();
+                            }
+                          },
+                        ),
+
+                        const SizedBox(height: 30),
+                        ElevatedButton(
+                          onPressed: _handleLogin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('Login', style: AppTextStyles.primaryButton),
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton(
+                          onPressed: () => Navigator.pushNamed(context, '/signup'),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.primary, width: 2),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('Sign Up', style: AppTextStyles.outlinedButton),
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: _handleBiometricLogin,
+                          icon: const Icon(Icons.fingerprint),
+                          label: const Text('Login with Biometrics'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 30),
-                      ElevatedButton(
-                        onPressed: _handleLogin,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        const SizedBox(height: 20),
+                        Center(
+                          child: TextButton(
+                            onPressed: () => Navigator.pushNamed(context, '/reset-password'),
+                            child: const Text('Reset Password', style: AppTextStyles.link),
+                          ),
                         ),
-                        child: const Text('Login', style: AppTextStyles.primaryButton),
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton(
-                        onPressed: () => Navigator.pushNamed(context, '/signup'),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppColors.primary, width: 2),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('Sign Up', style: AppTextStyles.outlinedButton),
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton.icon(
-                        onPressed: _handleBiometricLogin,
-                        icon: const Icon(Icons.fingerprint),
-                        label: const Text('Login with Biometrics'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Center(
-                        child: TextButton(
-                          onPressed: () => Navigator.pushNamed(context, '/reset-password'),
-                          child: const Text('Reset Password', style: AppTextStyles.link),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -204,21 +237,31 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter email and password')),
-      );
-      return;
-    }
-
     try {
       final result = await ApiService.login(email: email, password: password);
+      if (result['status'] == false) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text(result['detail'], style: const TextStyle(color: Colors.white))),
+              ],
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
 
-      await TokenStorageService.saveUserInfo(result['user']);
-      await TokenStorageService.saveTokens(
+      await StorageService.saveUserInfo(result['user']);
+      await StorageService.saveTokens(
         accessToken: result['access_token'],
         refreshToken: result['refresh_token'],
         accessExpires: result['access_token_expires_at'],
@@ -228,7 +271,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login failed: $e')),
+        SnackBar(
+          content: Text('Login failed: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }

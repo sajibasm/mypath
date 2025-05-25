@@ -32,7 +32,6 @@ class _WheelchairFormScreenState extends State<WheelchairFormScreen> {
   bool isLoading = false;
   bool isDropdownLoading = true;
 
-
   @override
   void initState() {
     super.initState();
@@ -42,7 +41,6 @@ class _WheelchairFormScreenState extends State<WheelchairFormScreen> {
     wheelNumber = widget.wheelchair?['wheel_number'] ?? 2;
     isDefault = widget.wheelchair?['is_default'] ?? false;
 
-    // Extract nested IDs correctly
     selectedTypeId = widget.wheelchair?['wheelchair_type']?['id'];
     selectedDriveTypeId = widget.wheelchair?['wheelchair_drive_type']?['id'];
     selectedTireMaterialId = widget.wheelchair?['wheelchair_tire_material']?['id'];
@@ -83,17 +81,6 @@ class _WheelchairFormScreenState extends State<WheelchairFormScreen> {
       'is_default': isDefault,
     };
 
-    // Only include non-null dropdowns
-    if (selectedTypeId != null) {
-      data['wheelchair_type_id'] = selectedTypeId;
-    }
-    if (selectedDriveTypeId != null) {
-      data['wheelchair_drive_type_id'] = selectedDriveTypeId;
-    }
-    if (selectedTireMaterialId != null) {
-      data['wheelchair_tire_material_id'] = selectedTireMaterialId;
-    }
-
     setState(() => isLoading = true);
 
     try {
@@ -102,7 +89,18 @@ class _WheelchairFormScreenState extends State<WheelchairFormScreen> {
       } else {
         await ApiService.updateWheelchair(widget.wheelchair!['id'], data);
       }
-      if (mounted) Navigator.pop(context);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(widget.wheelchair == null
+                ? 'Wheelchair created successfully'
+                : 'Wheelchair updated successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
@@ -111,7 +109,6 @@ class _WheelchairFormScreenState extends State<WheelchairFormScreen> {
   }
 
   @override
-
   Widget build(BuildContext context) {
     final isEdit = widget.wheelchair != null;
 
@@ -131,73 +128,117 @@ class _WheelchairFormScreenState extends State<WheelchairFormScreen> {
               TextFormField(
                 controller: identifierController,
                 decoration: const InputDecoration(labelText: 'Identifier'),
-                validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+                validator: (val) => val == null || val.isEmpty ? 'Identifier is required' : null,
+                onChanged: (_) => _formKey.currentState?.validate(),
               ),
+
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(
                 value: wheelNumber,
                 decoration: const InputDecoration(labelText: 'Number of Wheels'),
-                items: [2, 3, 4]
+                items: [2, 3, 4, 5, 6]
                     .map((val) => DropdownMenuItem(value: val, child: Text('$val Wheels')))
                     .toList(),
-                onChanged: (val) => setState(() => wheelNumber = val ?? 2),
+                onChanged: (val) {
+                  setState(() => wheelNumber = val ?? 2);
+                  _formKey.currentState?.validate();
+                },
+                validator: (val) => val == null ? 'Select number of wheels' : null,
               ),
+
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(
                 value: selectedTypeId,
                 decoration: const InputDecoration(labelText: 'Wheelchair Type'),
-                onChanged: (val) => setState(() => selectedTypeId = val),
+                onChanged: (val) {
+                  setState(() => selectedTypeId = val);
+                  _formKey.currentState?.validate();
+                },
                 items: typeOptions.map((type) {
                   return DropdownMenuItem<int>(
                     value: type['id'],
                     child: Text(type['name']),
                   );
                 }).toList(),
-                validator: (val) => val == null ? 'Please select a type' : null,
+                validator: (val) => val == null ? 'Please select a wheelchair type' : null,
               ),
+
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(
                 value: selectedDriveTypeId,
                 decoration: const InputDecoration(labelText: 'Drive Type'),
-                onChanged: (val) => setState(() => selectedDriveTypeId = val),
+                onChanged: (val) {
+                  setState(() => selectedDriveTypeId = val);
+                  _formKey.currentState?.validate();
+                },
                 items: driveOptions.map((item) {
                   return DropdownMenuItem<int>(
                     value: item['id'],
                     child: Text(item['name']),
                   );
                 }).toList(),
-                validator: (val) => val == null ? 'Please Drive Type' : null,
+                validator: (val) => val == null ? 'Please select drive type' : null,
               ),
+
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(
                 value: selectedTireMaterialId,
                 decoration: const InputDecoration(labelText: 'Tire Material'),
-                onChanged: (val) => setState(() => selectedTireMaterialId = val),
+                onChanged: (val) {
+                  setState(() => selectedTireMaterialId = val);
+                  _formKey.currentState?.validate();
+                },
                 items: tireOptions.map((item) {
                   return DropdownMenuItem<int>(
                     value: item['id'],
                     child: Text(item['name']),
                   );
                 }).toList(),
-                validator: (val) => val == null ? 'Please Tire Material' : null,
-
+                validator: (val) => val == null ? 'Please select tire material' : null,
               ),
+
               const SizedBox(height: 16),
               TextFormField(
                 controller: heightController,
-                decoration: const InputDecoration(labelText: 'Height (inches)'),
+                decoration: const InputDecoration(
+                  labelText: 'Height (inches)',
+                  counterText: '', // hides character counter
+                ),
                 keyboardType: TextInputType.number,
+                maxLength: 3,
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) return 'Enter height';
+                  if (val.length > 3) return 'Max 3 digits allowed';
+                  final num? h = num.tryParse(val);
+                  if (h == null || h <= 0) return 'Enter valid height';
+                  return null;
+                },
+                onChanged: (_) => _formKey.currentState?.validate(),
               ),
+
               const SizedBox(height: 16),
               TextFormField(
                 controller: widthController,
-                decoration: const InputDecoration(labelText: 'Width (inches)'),
+                decoration: const InputDecoration(
+                  labelText: 'Width (inches)',
+                  counterText: '',
+                ),
                 keyboardType: TextInputType.number,
+                maxLength: 3,
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) return 'Enter width';
+                  if (val.length > 3) return 'Max 3 digits allowed';
+                  final num? w = num.tryParse(val);
+                  if (w == null || w <= 0) return 'Enter valid width';
+                  return null;
+                },
+                onChanged: (_) => _formKey.currentState?.validate(),
               ),
+
               const SizedBox(height: 16),
               SwitchListTile(
                 title: const Text('Is Default'),
-                activeColor: Colors.green, // ✅ sets thumb (switch) color
+                activeColor: Colors.green,
                 value: isDefault,
                 onChanged: (val) => setState(() => isDefault = val),
               ),

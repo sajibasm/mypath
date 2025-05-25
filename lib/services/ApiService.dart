@@ -1,10 +1,11 @@
+import 'package:flutter/foundation.dart';
+
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../constants/constants.dart';
 import '../constants/endpoints.dart';
-import 'TokenStorageService.dart';
+import 'StorageService.dart';
 
 class ApiService {
   static const Duration timeoutDuration = Duration(seconds: 10);
@@ -35,7 +36,7 @@ class ApiService {
   static Future<http.Response> _authorizedRequestWithRetry(
     Future<http.Response> Function(String token) requestFn,
   ) async {
-    final tokens = await TokenStorageService.loadTokens();
+    final tokens = await StorageService.loadTokens();
     String? accessToken = tokens['access_token'];
 
     if (accessToken == null) throw Exception('Access token not found.');
@@ -48,7 +49,7 @@ class ApiService {
     bool refreshed = await refreshToken();
     if (!refreshed) throw Exception('Session expired. Please login again.');
 
-    final newTokens = await TokenStorageService.loadTokens();
+    final newTokens = await StorageService.loadTokens();
     accessToken = newTokens['access_token'];
 
     return await requestFn(accessToken!);
@@ -56,7 +57,7 @@ class ApiService {
 
   /// 📍 Refreshes the access token using the refresh token
   static Future<bool> refreshToken() async {
-    final tokens = await TokenStorageService.loadTokens();
+    final tokens = await StorageService.loadTokens();
     final refreshToken = tokens['refresh_token'];
 
     if (refreshToken == null) return false;
@@ -64,12 +65,12 @@ class ApiService {
     final response = await http.post(
       AppApi.refresh, // example: /api/user/token/refresh/
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'refresh': refreshToken}),
+      body: jsonEncode({'refresh_token': refreshToken}),
     );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      await TokenStorageService.saveTokens(
+      await StorageService.saveTokens(
         accessToken: data['access_token'],
         refreshToken: data['refresh_token'],
         accessExpires: data['access_token_expires_at'],
@@ -181,7 +182,7 @@ class ApiService {
     required String gender,
     required String age,
   }) async {
-    final tokens = await TokenStorageService.loadTokens();
+    final tokens = await StorageService.loadTokens();
     final accessToken = tokens['access_token'];
 
     if (accessToken == null) {
@@ -274,6 +275,8 @@ class ApiService {
 
       final data = jsonDecode(response.body);
 
+      // print('Login failed response: ${response.body}');
+
       if (response.statusCode == 200) {
         return {
           'status': true,
@@ -285,7 +288,13 @@ class ApiService {
           'refresh_token_expires_at': data['refresh_token_expires_at'],
         };
       } else {
-        return {'status': false, 'detail': data['detail'] ?? 'Login failed.'};
+        return {
+          'status': false,
+          'detail': data['detail'] ??
+              (data['non_field_errors'] is List
+                  ? data['non_field_errors'].join(', ')
+                  : 'Login failed.')
+        };
       }
     } catch (e) {
       return {'status': false, 'detail': 'Exception: $e'};
@@ -317,21 +326,26 @@ class ApiService {
 
   // /// 📍 Fetches the list of wheelchairs for the user
   static Future<List<dynamic>> getUserWheelchairs() async {
-    final response = await _authorizedRequestWithRetry(
-      (token) => http.get(
-        AppApi.userWheelChair,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      ),
-    );
+    try {
+      final response = await _authorizedRequestWithRetry(
+            (token) => http.get(
+          AppApi.userWheelChair,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['results'] ?? [];
-    } else {
-      throw Exception("Failed to load wheelchairs: ${response.statusCode}");
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['results'] ?? [];
+      } else {
+        throw Exception("Failed to load wheelchairs: ${response.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("Wheelchair fetch error: $e");
+      throw Exception("Session expired. Please login again.");
     }
   }
 

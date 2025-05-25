@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 import '../constants/styles.dart';
 import '../constants/constants.dart';
-import '../services/TokenStorageService.dart'; // Added because you use animationDuration and padding constants.
+import '../services/StorageService.dart'; // Added because you use animationDuration and padding constants.
 
 class WelcomeScreen extends StatefulWidget {
   @override
@@ -45,7 +45,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   Future<void> checkTokenAndNavigate() async {
     await Future.delayed(const Duration(seconds: 2)); // 🔹 2-sec delay to show logo
-    final tokens = await TokenStorageService.loadTokens();
+    final tokens = await StorageService.loadTokens();
     final accessToken = tokens['access_token'];
     final expiry = DateTime.tryParse(tokens['access_token_expires_at'] ?? '');
 

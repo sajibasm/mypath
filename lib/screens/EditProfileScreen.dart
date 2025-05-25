@@ -132,8 +132,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 TextFormField(
                   controller: nameController,
                   decoration: const InputDecoration(labelText: 'Name'),
-                  validator: (value) =>
-                  value == null || value.isEmpty ? 'Name is required' : null,
+                  validator: (value) => value == null || value.isEmpty ? 'Name is required' : null,
+                  onChanged: (_) => _formKey.currentState?.validate(),
                 ),
 
                 const SizedBox(height: 15),
@@ -141,61 +141,73 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 DropdownButtonFormField<String>(
                   value: selectedHeight,
                   decoration: const InputDecoration(labelText: 'Height'),
-                  onChanged: (val) => setState(() => selectedHeight = val),
+                  onChanged: (val) {
+                    setState(() => selectedHeight = val);
+                    _formKey.currentState?.validate();
+                  },
                   items: heightOptions.map((item) {
                     return DropdownMenuItem(
                       value: item['value'],
                       child: Text(item['label']!),
                     );
                   }).toList(),
-                  validator: (value) =>
-                  value == null || value.isEmpty ? 'Select height' : null,
+                  validator: (value) => value == null || value.isEmpty ? 'Select height' : null,
                 ),
+
 
                 const SizedBox(height: 15),
 
                 DropdownButtonFormField<String>(
                   value: selectedWeight,
                   decoration: const InputDecoration(labelText: 'Weight'),
-                  onChanged: (val) => setState(() => selectedWeight = val),
+                  onChanged: (val) {
+                    setState(() => selectedWeight = val);
+                    _formKey.currentState?.validate();
+                  },
                   items: weightOptions.map((item) {
                     return DropdownMenuItem(
                       value: item['value'],
                       child: Text(item['label']!),
                     );
                   }).toList(),
-                  validator: (value) =>
-                  value == null || value.isEmpty ? 'Select weight' : null,
+                  validator: (value) => value == null || value.isEmpty ? 'Select weight' : null,
                 ),
+
 
                 const SizedBox(height: 15),
 
                 DropdownButtonFormField<String>(
                   value: selectedAge,
                   decoration: const InputDecoration(labelText: 'Age'),
-                  onChanged: (val) => setState(() => selectedAge = val),
+                  onChanged: (val) {
+                    setState(() => selectedAge = val);
+                    _formKey.currentState?.validate();
+                  },
                   items: ageOptions.map((item) {
                     return DropdownMenuItem(
                       value: item['value'],
                       child: Text(item['label']!),
                     );
                   }).toList(),
-                  validator: (value) =>
-                  value == null || value.isEmpty ? 'Select age' : null,
+                  validator: (value) => value == null || value.isEmpty ? 'Select age' : null,
                 ),
+
 
                 const SizedBox(height: 15),
 
                 DropdownButtonFormField<String>(
                   value: gender,
-                  onChanged: (val) => setState(() => gender = val),
+                  onChanged: (val) {
+                    setState(() => gender = val);
+                    _formKey.currentState?.validate();
+                  },
                   items: ['-', 'Male', 'Female', 'Other']
                       .map((g) => DropdownMenuItem(value: g, child: Text(g)))
                       .toList(),
                   decoration: const InputDecoration(labelText: 'Gender'),
-                  validator: (value) =>
-                  value == null || value.isEmpty ? 'Select gender' : null,
+                  validator: (value) => value == null || value.isEmpty ? 'Select gender' : null,
                 ),
+
 
                 const SizedBox(height: 25),
 
