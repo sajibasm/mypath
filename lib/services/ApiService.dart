@@ -145,12 +145,11 @@ class ApiService {
     }
   }
 
-  // /// 📍 Fetches the user's profile information
   /// 👤 Fetches user profile with token refresh logic
   static Future<Map<String, dynamic>> getProfile() async {
     try {
       final response = await _authorizedRequestWithRetry(
-        (token) => http.get(
+            (token) => http.get(
           AppApi.profile,
           headers: {
             'Authorization': 'Bearer $token',
@@ -162,6 +161,15 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return {'status': true, 'profile': data};
+      } else if (response.statusCode == 404) {
+        final data = jsonDecode(response.body);
+        if (data['detail'] == 'User profile not found.') {
+          return {'status': false, 'detail': 'User profile not found.'};
+        }
+        return {
+          'status': false,
+          'detail': 'Profile not found. Code: 404',
+        };
       } else {
         return {
           'status': false,
@@ -173,6 +181,7 @@ class ApiService {
       return {'status': false, 'detail': 'Exception: $e'};
     }
   }
+
 
   // /// 📍 Updates the user's profile information
   static Future<Map<String, dynamic>> updateProfile({

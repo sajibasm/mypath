@@ -36,6 +36,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
         profile = result['profile'];
         isLoading = false;
       });
+    } else if (result['detail'] == 'User profile not found.') {
+      setState(() {
+        // Provide an empty profile structure to enable editing
+        profile = {
+          'name': '',
+          'email': '',
+          'gender': '',
+          'age': '',
+          'height': '',
+          'weight': ''
+        };
+        isLoading = false;
+      });
     } else {
       setState(() {
         error = result['detail'];
@@ -72,6 +85,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onRefresh: _loadProfile,
         child: ListView(
           children: [
+            if ((profile?['name']?.isEmpty ?? true) &&
+                (profile?['email']?.isEmpty ?? true))
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Center(
+                  child: Text(
+                    "No profile info found. Please update your profile.",
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ),
+              ),
             buildProfileCard(profile!, _navigateToEdit),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -121,7 +145,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                profile['name'] ?? 'N/A',
+                profile['name']?.toString().isNotEmpty == true
+                    ? profile['name']
+                    : "No Name",
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -150,7 +176,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // 🔹 Row with icon + label + value
-  Widget _infoRow(IconData icon, String label, dynamic value, {Color iconColor = Colors.grey}) {
+  Widget _infoRow(IconData icon, String label, dynamic value,
+      {Color iconColor = Colors.grey}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
