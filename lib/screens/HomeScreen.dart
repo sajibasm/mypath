@@ -76,11 +76,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _cleanupBeforeDispose(); // ✅ Call the async method, no `await` here
     _locationSub?.cancel();
     _sensorService.stop();
     _cameraUpdateTimer?.cancel();
     super.dispose();
   }
+
+  Future<void> _cleanupBeforeDispose() async {
+    await _flushQueueToHive(); // ✅ Safe async operation
+    // Add more cleanup if needed
+  }
+
+  List<SensorData> _writeQueue = [];
+
+  Future<void> _flushQueueToHive() async {
+    if (_writeQueue.isEmpty) return;
+
+    final box = Hive.box<SensorData>('sensor_data');
+    for (final data in _writeQueue) {
+      await box.add(data);
+    }
+    _writeQueue.clear();
+  }
+
 
   Future<void> _loadUserInfoAndSession() async {
     final user = await StorageService.loadUserInfo();
@@ -361,7 +380,12 @@ class _HomeScreenState extends State<HomeScreen> {
         sessionId: _currentSessionId!,
       );
 
-      compute(writeSensorData, dataWithSession); // ✅ Write offloaded to isolate
+      _writeQueue.add(dataWithSession);
+
+      if (_writeQueue.length >= 10) {
+        await _flushQueueToHive(); // Flush every 10 entries
+      }
+
       setState(() => _latestSensorData = dataWithSession);
     };
 
@@ -392,6 +416,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _locationSub?.cancel();
     _sensorService.stop();
     _locationService.stop();
+    await _flushQueueToHive(); // ✅ Safe async operation
+
 
     if (_currentSessionId == null) return;
 

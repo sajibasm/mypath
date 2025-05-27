@@ -7,10 +7,18 @@ import 'StorageService.dart';
 
 class UploaderService {
   static Future<void> uploadSession(String localSessionId) async {
+
     final wifiOnly = await StorageService.getWiFiOnlyUploadSetting();
     final connection = await Connectivity().checkConnectivity();
 
-    if (wifiOnly && connection != ConnectivityResult.wifi) {
+    print("WiFi Only? $wifiOnly, Connection: $connection");
+
+// Check if list contains wifi
+    final isWifi = connection is ConnectivityResult
+        ? connection == ConnectivityResult.wifi
+        : (connection is List && connection.contains(ConnectivityResult.wifi));
+
+    if (wifiOnly && !isWifi) {
       print("⚠️ Upload skipped: Not connected to Wi-Fi");
       return;
     }
