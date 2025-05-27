@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/ApiService.dart';
+import '../services/APIService.dart';
 import '../constants/colors.dart';
 import '../utils/CustomLoader.dart';
 
@@ -50,9 +50,9 @@ class _WheelchairFormScreenState extends State<WheelchairFormScreen> {
 
   Future<void> _loadDropdowns() async {
     try {
-      final types = await ApiService.getWheelchairTypes();
-      final drives = await ApiService.getDriveTypes();
-      final tires = await ApiService.getTireMaterials();
+      final types = await APIService.getWheelchairTypes();
+      final drives = await APIService.getDriveTypes();
+      final tires = await APIService.getTireMaterials();
 
       setState(() {
         typeOptions = List<Map<String, dynamic>>.from(types);
@@ -85,9 +85,9 @@ class _WheelchairFormScreenState extends State<WheelchairFormScreen> {
 
     try {
       if (widget.wheelchair == null) {
-        await ApiService.createWheelchair(data);
+        await APIService.createWheelchair(data);
       } else {
-        await ApiService.updateWheelchair(widget.wheelchair!['id'], data);
+        await APIService.updateWheelchair(widget.wheelchair!['id'], data);
       }
 
       if (mounted) {

@@ -1,0 +1,27 @@
+# Flutter and Dart native methods
+-keep class io.flutter.** { *; }
+-keep class io.flutter.plugins.** { *; }
+
+# Keep Google Maps classes
+-keep class com.google.android.gms.maps.** { *; }
+-dontwarn com.google.android.gms.maps.**
+
+# Prevent Flogger from logging excessively
+-assumenosideeffects class com.google.common.flogger.** {
+    *;
+}
+
+# For Geolocator and Location Services
+-keep class com.baseflow.geolocator.** { *; }
+-dontwarn com.baseflow.geolocator.**
+
+# Prevent crash on reflection
+-keep class android.support.v4.app.** { *; }
+-dontwarn android.support.v4.app.**
+
+# Preserve your main activity and services
+-keep class com.routemypath.** { *; }
+
+# Retain model and Hive adapters (optional)
+-keep class **.models.** { *; }
+-keep class **.hive.** { *; }

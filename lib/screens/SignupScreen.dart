@@ -4,7 +4,7 @@ import 'dart:convert';
 import '../constants/colors.dart';
 import '../constants/constants.dart';
 import '../constants/styles.dart';
-import '../services/ApiService.dart';
+import '../services/APIService.dart';
 import '../services/StorageService.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -66,7 +66,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
     setState(() => isLoading = true);
 
-    final result = await ApiService.signup(
+    final result = await APIService.signup(
       email: emailController.text.trim(),
       name: nameController.text.trim(),
       password: passwordController.text.trim(),

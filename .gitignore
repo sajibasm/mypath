@@ -11,11 +11,13 @@ generated_plugin_registrant.dart
 android/.gradle/
 android/captures/
 android/app/build/
+android/local.properties
 *.iml
 *.apk
 *.aar
 
 # iOS related
+ios/Secrets.xcconfig
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
 ios/Flutter/Generated.xcconfig

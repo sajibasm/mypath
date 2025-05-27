@@ -5,7 +5,7 @@ import 'package:pin_code_fields/pin_code_fields.dart';
 import '../constants/colors.dart';
 import '../constants/styles.dart';
 import '../constants/constants.dart';
-import '../services/ApiService.dart';
+import '../services/APIService.dart';
 import 'NewResetPasswordScreen.dart';
 
 class VerifyOtpScreen extends StatefulWidget {
@@ -76,7 +76,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> with SingleTickerProv
   Future<void> handleVerifyOtp() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final result = await ApiService.verifyOtp(widget.email, otp);
+    final result = await APIService.verifyOtp(widget.email, otp);
     final success = result['status'] == true;
 
     if (!success) {
@@ -96,7 +96,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> with SingleTickerProv
   }
 
   Future<void> handleResendCode() async {
-    final result = await ApiService.sendPasswordResetCode(widget.email);
+    final result = await APIService.sendPasswordResetCode(widget.email);
     final success = result['status'] == true;
 
     ScaffoldMessenger.of(context).showSnackBar(

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/StorageService.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -14,22 +14,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadWifiSetting();
+    _loadSetting();
   }
 
-  Future<void> _loadWifiSetting() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _wifiOnlyUpload = prefs.getBool('wifiOnlyUpload') ?? false;
-    });
+  Future<void> _loadSetting() async {
+    final wifiOnly = await StorageService.getWiFiOnlyUploadSetting();
+    setState(() => _wifiOnlyUpload = wifiOnly);
   }
 
-  Future<void> _toggleWifiSetting(bool value) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('wifiOnlyUpload', value);
-    setState(() {
-      _wifiOnlyUpload = value;
-    });
+  Future<void> _onToggle(bool value) async {
+    await StorageService.setWiFiOnlyUploadSetting(value);
+    setState(() => _wifiOnlyUpload = value);
   }
 
   @override
@@ -44,9 +39,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('Wi-Fi Only Data Upload'),
             subtitle: const Text('Enable to upload data only over Wi-Fi'),
             value: _wifiOnlyUpload,
-            onChanged: _toggleWifiSetting,
-            activeColor: Colors.green, // Thumb color when ON
-            activeTrackColor: Colors.greenAccent, // Track color when ON
+            onChanged: _onToggle,
+            activeColor: Colors.green,
+            activeTrackColor: Colors.greenAccent,
           ),
         ],
       ),

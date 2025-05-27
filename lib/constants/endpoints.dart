@@ -2,6 +2,13 @@
 class AppApi {
   static const String apiBaseUrl = 'https://0291-2600-4040-b5e5-f300-a881-2bd0-6293-7d02.ngrok-free.app';
 
+  // Device API for create session and sensor
+  static final Uri deviceSession = Uri.parse('$apiBaseUrl/api/device/session/');
+  static final Uri deviceSensor = Uri.parse('$apiBaseUrl/api/device/sensor/');
+
+  static final Uri dailySummary = Uri.parse('$apiBaseUrl/api/device/session/summary/daily/');
+  static final Uri monthlySummary = Uri.parse('$apiBaseUrl/api/device/session/summary/monthly/');
+
   // User profile
   static final Uri login = Uri.parse('$apiBaseUrl/api/user/login/');
   static final Uri register = Uri.parse('$apiBaseUrl/api/user/register/');

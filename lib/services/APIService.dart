@@ -5,9 +5,10 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../constants/constants.dart';
 import '../constants/endpoints.dart';
+import '../models/sensor_data.dart';
 import 'StorageService.dart';
 
-class ApiService {
+class APIService {
   static const Duration timeoutDuration = Duration(seconds: 10);
   static String? _token; // 🔐 Bearer token used globally
   static const _storage = FlutterSecureStorage();
@@ -82,6 +83,132 @@ class ApiService {
     return false;
   }
 
+  static Future<Map<String, double>?> getMonthlySessionSummary() async {
+    final response = await _authorizedRequestWithRetry(
+          (token) => http.get(
+        AppApi.monthlySummary,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonList = jsonDecode(response.body);
+
+      final Map<String, double> result = {
+        for (var item in jsonList)
+          item['month']: (item['count'] as num).toDouble()
+      };
+
+      return result;
+    } else {
+      print("❌ Failed to fetch monthly summary: ${response.statusCode} - ${response.body}");
+      return null;
+    }
+  }
+
+  static Future<Map<String, double>?> getDailySessionSummary() async {
+    final response = await _authorizedRequestWithRetry(
+          (token) => http.get(
+            AppApi.dailySummary,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonList = jsonDecode(response.body);
+
+      final Map<String, double> result = {
+        for (var item in jsonList)
+          item['date']: (item['count'] as num).toDouble()
+      };
+
+      return result;
+    } else {
+      print("❌ Failed to fetch daily summary: ${response.statusCode} - ${response.body}");
+      return null;
+    }
+  }
+
+  static Future<String?> createSensorSession({
+    required int wheelchairId,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final response = await _authorizedRequestWithRetry(
+      (token) => http.post(
+        AppApi.deviceSession,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          "wheelchair_id": wheelchairId,
+          "start_timestamp": start.millisecondsSinceEpoch,
+          "end_timestamp": end.millisecondsSinceEpoch,
+        }),
+      ),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final json = jsonDecode(response.body);
+      return json['sensor_session_id'];
+    } else {
+      print("❌ Failed to create session: ${response.body}");
+      return null;
+    }
+  }
+
+  static Future<bool> uploadSensorData({
+    required String sensorSessionId,
+    required List<SensorData> chunk,
+  }) async {
+    final List<Map<String, dynamic>> data =
+        chunk
+            .map(
+              (d) => {
+                "timestamp": d.timestamp.millisecondsSinceEpoch.toString(),
+                "accel_x": d.accX.toStringAsFixed(2),
+                "accel_y": d.accY.toStringAsFixed(2),
+                "accel_z": d.accZ.toStringAsFixed(2),
+                "gyro_x": d.gyroX.toStringAsFixed(2),
+                "gyro_y": d.gyroY.toStringAsFixed(2),
+                "gyro_z": d.gyroZ.toStringAsFixed(2),
+                "mag_x": d.magX.toStringAsFixed(2),
+                "mag_y": d.magY.toStringAsFixed(2),
+                "mag_z": d.magZ.toStringAsFixed(2),
+                "latitude": d.latitude.toStringAsFixed(6),
+                "longitude": d.longitude.toStringAsFixed(6),
+                "pressure": d.pressure?.toStringAsFixed(2) ?? "0.0",
+                "speed": "1.5", // If available from location, use actual speed
+              },
+            )
+            .toList();
+
+    final response = await _authorizedRequestWithRetry(
+      (token) => http.post(
+        AppApi.deviceSensor,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({"sensor_session_id": sensorSessionId, "data": data}),
+      ),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return true;
+    } else {
+      print("❌ Upload failed: ${response.body}");
+      return false;
+    }
+  }
+
   /// 📍 Sends a password reset code to the user's email
   static Future<Map<String, dynamic>> sendPasswordResetCode(
     String email,
@@ -149,7 +276,7 @@ class ApiService {
   static Future<Map<String, dynamic>> getProfile() async {
     try {
       final response = await _authorizedRequestWithRetry(
-            (token) => http.get(
+        (token) => http.get(
           AppApi.profile,
           headers: {
             'Authorization': 'Bearer $token',
@@ -166,10 +293,7 @@ class ApiService {
         if (data['detail'] == 'User profile not found.') {
           return {'status': false, 'detail': 'User profile not found.'};
         }
-        return {
-          'status': false,
-          'detail': 'Profile not found. Code: 404',
-        };
+        return {'status': false, 'detail': 'Profile not found. Code: 404'};
       } else {
         return {
           'status': false,
@@ -181,7 +305,6 @@ class ApiService {
       return {'status': false, 'detail': 'Exception: $e'};
     }
   }
-
 
   // /// 📍 Updates the user's profile information
   static Future<Map<String, dynamic>> updateProfile({
@@ -202,7 +325,7 @@ class ApiService {
       (token) => http.put(
         AppApi.profileUpdate,
         headers: {
-          'Authorization': 'Bearer $accessToken',
+          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
@@ -299,10 +422,11 @@ class ApiService {
       } else {
         return {
           'status': false,
-          'detail': data['detail'] ??
+          'detail':
+              data['detail'] ??
               (data['non_field_errors'] is List
                   ? data['non_field_errors'].join(', ')
-                  : 'Login failed.')
+                  : 'Login failed.'),
         };
       }
     } catch (e) {
@@ -337,7 +461,7 @@ class ApiService {
   static Future<List<dynamic>> getUserWheelchairs() async {
     try {
       final response = await _authorizedRequestWithRetry(
-            (token) => http.get(
+        (token) => http.get(
           AppApi.userWheelChair,
           headers: {
             'Authorization': 'Bearer $token',

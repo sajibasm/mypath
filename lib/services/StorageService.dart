@@ -1,9 +1,43 @@
 import 'dart:convert';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageService {
 
+  static const String _wifiOnlyKey = 'wifiOnlyUpload'; // ✅ Define here
+  static const _secureStorage = FlutterSecureStorage();
+  static const _emailKey = 'biometric_email';
+  static const _passwordKey = 'biometric_password';
+
+  static Future<void> saveCredentials(String email, String password) async {
+    await _secureStorage.write(key: _emailKey, value: email);
+    await _secureStorage.write(key: _passwordKey, value: password);
+  }
+
+  static Future<Map<String, String?>> loadCredentials() async {
+    final email = await _secureStorage.read(key: _emailKey);
+    final password = await _secureStorage.read(key: _passwordKey);
+    return {'email': email, 'password': password};
+  }
+
+  static Future<void> clearCredentials() async {
+    await _secureStorage.delete(key: _emailKey);
+    await _secureStorage.delete(key: _passwordKey);
+  }
+
+
+  // ✅ Get Wi-Fi only upload setting
+  static Future<bool> getWiFiOnlyUploadSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_wifiOnlyKey) ?? false;
+  }
+
+  // ✅ Set Wi-Fi only upload setting
+  static Future<void> setWiFiOnlyUploadSetting(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_wifiOnlyKey, value);
+  }
 
   // ✅ Save selected wheelchair as JSON
   static Future<void> saveSelectedWheelchair(Map<String, dynamic> wheelchair) async {
@@ -18,8 +52,6 @@ class StorageService {
     if (jsonString == null) return null;
     return jsonDecode(jsonString);
   }
-
-
 
   // ✅ Save tokens and expiration
   static Future<void> saveTokens({
@@ -62,6 +94,26 @@ class StorageService {
       'email': prefs.getString('user_email'),
       'role': prefs.getString('user_role'),
     };
+  }
+
+  // ✅ Save tracking session
+  static Future<void> saveRouteSession(Map<String, dynamic> session) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('route_session', jsonEncode(session));
+  }
+
+// ✅ Load tracking session
+  static Future<Map<String, dynamic>> getSavedRoute() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString('route_session');
+    if (jsonString == null) return {};
+    return jsonDecode(jsonString);
+  }
+
+// ✅ Clear tracking session
+  static Future<void> clearRouteSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('route_session');
   }
 
   // ✅ Clear everything

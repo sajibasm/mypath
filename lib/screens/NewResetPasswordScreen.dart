@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 import '../constants/styles.dart';
 import '../constants/constants.dart';
-import '../services/ApiService.dart';
+import '../services/APIService.dart';
 
 class NewPasswordScreen extends StatefulWidget {
   final String email;
@@ -54,7 +54,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> with SingleTicker
     if (!_formKey.currentState!.validate()) return;
 
     final password = passwordController.text.trim();
-    final result = await ApiService.resetPassword(widget.email, widget.code, password);
+    final result = await APIService.resetPassword(widget.email, widget.code, password);
     final success = result['status'] == true;
 
     ScaffoldMessenger.of(context).showSnackBar(

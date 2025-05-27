@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/ApiService.dart';
+import '../services/APIService.dart';
 import '../constants/colors.dart';
 import '../utils/CustomLoader.dart';
 import 'ChangePasswordScreen.dart';
@@ -29,7 +29,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       error = null;
     });
 
-    final result = await ApiService.getProfile();
+    final result = await APIService.getProfile();
 
     if (result['status'] == true) {
       setState(() {

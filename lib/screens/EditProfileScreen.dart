@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/ApiService.dart';
+import '../services/APIService.dart';
 import '../constants/colors.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -93,7 +93,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       error = null;
     });
 
-    final result = await ApiService.updateProfile(
+    final result = await APIService.updateProfile(
       name: nameController.text.trim(),
       height: selectedHeight ?? '',
       weight: selectedWeight ?? '',

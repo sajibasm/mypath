@@ -4,7 +4,7 @@ import 'dart:async';
 import '../../constants/colors.dart';
 import '../../constants/styles.dart';
 import '../../constants/constants.dart';
-import '../../services/ApiService.dart';
+import '../../services/APIService.dart';
 import 'VerifyOtpScreen.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
@@ -52,7 +52,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
 
     final email = emailController.text.trim();
 
-    final result = await ApiService.sendPasswordResetCode(email);
+    final result = await APIService.sendPasswordResetCode(email);
     final bool success = result['status'] == true;
     final String message = result['detail'] ?? 'Something went wrong.';
 

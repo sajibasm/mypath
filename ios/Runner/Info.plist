@@ -57,7 +57,7 @@
 	<string>This app uses motion sensors (accelerometer, gyroscope, magnetometer) to analyze wheelchair movement and surfaces.</string>
 
 	<!-- ✅ Biometric Permission -->
-	<key>NSFaceIDUsageDescription</key>
-	<string>This app uses Face ID or Touch ID for secure login and user authentication.</string>
+<key>NSFaceIDUsageDescription</key>
+<string>We use Face ID to log you in securely</string>
 </dict>
 </plist>

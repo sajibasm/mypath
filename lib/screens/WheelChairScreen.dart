@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/ApiService.dart';
+import '../services/APIService.dart';
 import '../constants/colors.dart';
 import '../utils/CustomLoader.dart';
 import 'WheelchairFormScreen.dart';
@@ -26,7 +26,7 @@ class _WheelChairScreenState extends State<WheelChairScreen> {
 
   Future<void> _loadWheelchairs() async {
     try {
-      final result = await ApiService.getUserWheelchairs();
+      final result = await APIService.getUserWheelchairs();
       setState(() {
         wheelchairs = result;
         isLoading = false;
@@ -55,7 +55,7 @@ class _WheelChairScreenState extends State<WheelChairScreen> {
         'is_default': true,
       };
 
-      await ApiService.patchWheelchair(wc['id'], data);
+      await APIService.patchWheelchair(wc['id'], data);
       await _loadWheelchairs();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

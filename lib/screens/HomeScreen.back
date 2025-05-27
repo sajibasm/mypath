@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hive/hive.dart';
-import 'package:flutter/foundation.dart'; // for compute()
 
 import '../models/session_summary.dart';
 import '../services/DevModeEnvironment.dart';
@@ -17,12 +16,6 @@ import '../constants/styles.dart';
 import '../constants/constants.dart';
 import '../models/sensor_data.dart';
 import '../widgets/SensorOverlayPanel.dart';
-
-// ✅ Background write isolate function
-Future<void> writeSensorData(SensorData data) async {
-  final box = Hive.box<SensorData>('sensor_data');
-  await box.add(data);
-}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -61,24 +54,19 @@ class _HomeScreenState extends State<HomeScreen> {
   String? userEmail;
 
   String? _currentSessionId;
-  DateTime? _lastUpdate; // ✅ For throttling UI updates
-  Timer? _cameraUpdateTimer; // ✅ For debouncing camera animation
-
 
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadUserInfoAndSession(); // ✅ Delayed execution to reduce UI jank
-    });
+    _loadUserInfoAndSession();
+    String? _currentSessionId;
   }
 
   @override
   void dispose() {
     _locationSub?.cancel();
     _sensorService.stop();
-    _cameraUpdateTimer?.cancel();
     super.dispose();
   }
 
@@ -281,10 +269,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _startDataCollection() async {
+    // ✅ Cancel any previous stream
     _locationSub?.cancel();
 
     final currentLoc = await _locationService.getCurrentLocation();
+    final currentLatLng = LatLng(currentLoc.latitude!, currentLoc.longitude!);
     final point = LatLng(currentLoc.latitude!, currentLoc.longitude!);
+
+    if (_isMapReady && _mapController != null) {
+      _mapController!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: currentLatLng, zoom: 18.5),
+        ),
+      );
+    }
 
     _currentSessionId = DateTime.now().toIso8601String();
     _startTime = DateTime.now();
@@ -292,26 +290,21 @@ class _HomeScreenState extends State<HomeScreen> {
     _latestSpeed = 0.0;
 
     _routePoints.clear();
-    _routePoints.add(point);
-    _updatePolylinesAndMarkers(point);
+    _routePoints.add(point); // ✅ Initial point added
+    _updatePolylinesAndMarkers(point); // ✅ Initial marker/polyline update
 
-    _cameraUpdateTimer = Timer(const Duration(milliseconds: 500), () {
-      if (_isMapReady && _mapController != null) {
-        _mapController!.animateCamera(CameraUpdate.newLatLngZoom(point, 18.5));
-      }
-    });
-
+    // ✅ Start listening to location stream
     _locationSub = _locationService.locationStream.listen((loc) async {
-      final now = DateTime.now();
-      if (_lastUpdate != null && now.difference(_lastUpdate!) < const Duration(seconds: 1)) return;
-      _lastUpdate = now;
-
+      
+      print("Live Location: ${loc.latitude}, ${loc.longitude}, Speed: ${loc.speed}");
+      
       final point = LatLng(loc.latitude!, loc.longitude!);
       final speed = loc.speed ?? 0;
 
       if (_routePoints.isEmpty ||
           point.latitude != _routePoints.last.latitude ||
           point.longitude != _routePoints.last.longitude) {
+
         setState(() {
           _routePoints.add(point);
           _latestSpeed = speed;
@@ -325,6 +318,12 @@ class _HomeScreenState extends State<HomeScreen> {
           }
 
           _updatePolylinesAndMarkers(point);
+
+          if (_isMapReady && _mapController != null) {
+            final zoom = speed < 1.0 ? 19.0 : (speed < 3.0 ? 18.5 : 17.5);
+            _mapController!.animateCamera(CameraUpdate.newLatLngZoom(point, zoom));
+          }
+
           StorageService.saveRouteSession({
             'isCollecting': true,
             'route': _routePoints.map((p) => [p.latitude, p.longitude]).toList(),
@@ -332,17 +331,11 @@ class _HomeScreenState extends State<HomeScreen> {
             'totalDistance': _totalDistance,
           });
         });
-
-        _cameraUpdateTimer?.cancel();
-        _cameraUpdateTimer = Timer(const Duration(milliseconds: 1000), () {
-          if (_isMapReady && _mapController != null) {
-            final zoom = speed < 1.0 ? 19.0 : (speed < 3.0 ? 18.5 : 17.5);
-            _mapController!.animateCamera(CameraUpdate.newLatLngZoom(point, zoom));
-          }
-        });
       }
     });
 
+
+    // ✅ Sensor data collection handler
     _sensorService.onData = (data) async {
       final dataWithSession = SensorData(
         timestamp: data.timestamp,
@@ -361,10 +354,24 @@ class _HomeScreenState extends State<HomeScreen> {
         sessionId: _currentSessionId!,
       );
 
-      compute(writeSensorData, dataWithSession); // ✅ Write offloaded to isolate
+      final box = Hive.box<SensorData>('sensor_data');
+      await box.add(dataWithSession);
+
+      print("✅ Sensor data added to Hive");
+      print("🕒 Timestamp: ${dataWithSession.timestamp}");
+      print("📍 Location: ${dataWithSession.latitude}, ${dataWithSession.longitude}");
+      print("📈 ACC: X=${dataWithSession.accX}, Y=${dataWithSession.accY}, Z=${dataWithSession.accZ}");
+      print("📉 GYRO: X=${dataWithSession.gyroX}, Y=${dataWithSession.gyroY}, Z=${dataWithSession.gyroZ}");
+      print("🧲 MAG: X=${dataWithSession.magX}, Y=${dataWithSession.magY}, Z=${dataWithSession.magZ}");
+      if (dataWithSession.pressure != null) {
+        print("🌡 PRESSURE: ${dataWithSession.pressure!.toStringAsFixed(2)} hPa");
+      }
+      print("🔗 Session ID: ${dataWithSession.sessionId}");
+
       setState(() => _latestSensorData = dataWithSession);
     };
 
+    // ✅ Start sensor collection
     if (_selectedWheelchair != null && _selectedWheelchair!['id'] != null) {
       await _sensorService.start(
         wheelchairId: int.parse(_selectedWheelchair!['id'].toString()),
@@ -373,6 +380,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     setState(() => _isCollecting = true);
   }
+
 
   void _restoreTrackingUI() {
     if (_routePoints.isNotEmpty) {
@@ -548,7 +556,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 1:
         return const DataSummaryWidget();
       case 2:
-        return NavigationMapWidget();
+        return TurnByTurnMapWidget();
       default:
         return const Center(child: Text("Invalid tab"));
     }

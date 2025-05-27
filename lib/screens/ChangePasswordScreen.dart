@@ -1,6 +1,6 @@
 import 'package:MyPath/constants/colors.dart';
 import 'package:flutter/material.dart';
-import '../services/ApiService.dart';
+import '../services/APIService.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -23,7 +23,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     setState(() => isLoading = true);
 
     try {
-      final response = await ApiService.changePassword(
+      final response = await APIService.changePassword(
         currentPassword: currentController.text.trim(),
         newPassword: newController.text.trim(),
       );

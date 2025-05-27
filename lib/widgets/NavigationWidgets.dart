@@ -14,7 +14,7 @@ import '../constants/constants.dart';
 import '../constants/colors.dart';
 import '../constants/styles.dart';
 import '../constants/secrets.dart';
-import '../services/ApiService.dart';
+import '../services/APIService.dart';
 
 class _ReportItem extends StatelessWidget {
   final String imagePath;
@@ -60,14 +60,14 @@ class _ReportItem extends StatelessWidget {
   }
 }
 
-class TurnByTurnMapWidget extends StatefulWidget {
-  const TurnByTurnMapWidget({super.key});
+class NavigationMapWidget extends StatefulWidget {
+  const NavigationMapWidget({super.key});
 
   @override
-  State<TurnByTurnMapWidget> createState() => _TurnByTurnMapWidgetState();
+  State<NavigationMapWidget> createState() => _NavigationMapWidgetState();
 }
 
-class _TurnByTurnMapWidgetState extends State<TurnByTurnMapWidget>
+class _NavigationMapWidgetState extends State<NavigationMapWidget>
     with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
 
@@ -119,7 +119,6 @@ class _TurnByTurnMapWidgetState extends State<TurnByTurnMapWidget>
   CameraPosition? _previousCameraPosition; // 🔥 Add this to your state
 
   Set<Marker> _reportedMarkers = {}; // ✅ New markers for barriers/facilities
-
 
   final List<Map<String, String>> _barriers = [
     {'label': 'Stairs', 'icon': 'assets/maps/stairs.png'},
@@ -301,7 +300,7 @@ class _TurnByTurnMapWidgetState extends State<TurnByTurnMapWidget>
     try {
       final firstSegment = _segments.first;
 
-      final markers = await ApiService.searchMarkers(
+      final markers = await APIService.searchMarkers(
         marker_lat: firstSegment['start_location']['latitude'],
         marker_lng: firstSegment['start_location']['longitude'],
       );
@@ -389,7 +388,7 @@ class _TurnByTurnMapWidgetState extends State<TurnByTurnMapWidget>
           ? 'Barrier'
           : 'Facility';
 
-      await ApiService.createTransitMarker(
+      await APIService.createTransitMarker(
         transitId: _transitId!,
         segmentNumber: currentSegment['segment_number'] ?? _currentSegmentIndex,
         markerCategory: markerCategory,
@@ -704,7 +703,7 @@ class _TurnByTurnMapWidgetState extends State<TurnByTurnMapWidget>
     // ✅ Step 2: Cancel the active transit on server
     if (_transitId != null) {
       try {
-        await ApiService.cancelTransit(
+        await APIService.cancelTransit(
           transitId: _transitId!,
           distance: _totalDistance,
           duration: _totalDuration,
@@ -828,7 +827,7 @@ class _TurnByTurnMapWidgetState extends State<TurnByTurnMapWidget>
         try {
           // You can pass the overall distance and duration if you saved them
           // For now let's assume simple values
-          await ApiService.completeTransit(
+          await APIService.completeTransit(
             transitId: _transitId!,
             distance: _totalDistance,
             duration: _totalDuration,
@@ -902,7 +901,7 @@ class _TurnByTurnMapWidgetState extends State<TurnByTurnMapWidget>
     }
 
     final String url =
-        'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$inputText&key=${Secrets.googleMapsApiKey}&components=country:us';
+        'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$inputText&key=${Secrets.GoogleMapsAPI}&components=country:us';
 
     final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
@@ -932,7 +931,7 @@ class _TurnByTurnMapWidgetState extends State<TurnByTurnMapWidget>
     });
 
     final String url =
-        'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=${Secrets.googleMapsApiKey}';
+        'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=${Secrets.GoogleMapsAPI}';
 
     final response = await http.get(Uri.parse(url));
 
@@ -996,7 +995,7 @@ class _TurnByTurnMapWidgetState extends State<TurnByTurnMapWidget>
       final destinationString =
           "${destination.latitude},${destination.longitude}";
 
-      final routeResponse = await ApiService.routes(
+      final routeResponse = await APIService.routes(
         origin: originString,
         destination: destinationString,
       );
@@ -1702,7 +1701,7 @@ class _TurnByTurnMapWidgetState extends State<TurnByTurnMapWidget>
 
                           if (_transitId != null) {
                             try {
-                              await ApiService.createTransit(
+                              await APIService.createTransit(
                                 transitId: _transitId!,
                                 wheelChair: 1,
                               );
